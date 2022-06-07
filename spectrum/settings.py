@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     # 3rd Party Apps
     'django_extensions',
     'rest_framework',
+
+    # Project Apps
+    'users',
 ]
 
 MIDDLEWARE = [
