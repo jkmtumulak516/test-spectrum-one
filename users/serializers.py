@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from rest_framework.serializers import ModelSerializer, EmailField, CharField
+from rest_framework.serializers import ModelSerializer, Serializer, EmailField, CharField
 
 
 class UserSerializer(ModelSerializer):
@@ -8,8 +8,7 @@ class UserSerializer(ModelSerializer):
     email = EmailField()
     password = CharField(
         write_only=True,
-        required=True,
-        style={'input_type': 'password'}
+        style={'input_type': 'password'},
     )
     first_name = CharField(required=False)
     last_name = CharField(required=False)
@@ -30,3 +29,6 @@ class NoAuthUserSerializer(ModelSerializer):
         model = User
         fields = ['id', 'first_name', 'is_active']
 
+class LoginSerializer(Serializer):
+    email = EmailField()
+    password = CharField(style={'input_type': 'password'})

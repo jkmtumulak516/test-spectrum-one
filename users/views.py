@@ -7,12 +7,39 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from spectrum import settings
 from users import serializers
 from users.tokens import TokenGenerator, TokenValidator
 
-# Create your views here.
+
+class LoginView(APIView):
+    def post(self, request: Request):
+
+        serializer = serializers.LoginSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        email: str = serializer.validated_data['email']
+        password: str = serializer.validated_data['password']
+
+        try:
+            user: User = User.objects.get(email=email)
+            if not user.check_password(password):
+                return Response('invalid email or password', status=400)
+        except User.DoesNotExist:
+            return Response('invalid email or password', status=400)
+
+        if not user.is_active:
+            return Response('user is inactive', status=400)
+
+        token_generator = TokenGenerator()
+        token = token_generator.generate_bearer_token(user)
+
+        return Response(token.key)
+
 class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
@@ -36,13 +63,13 @@ class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         token_generator = TokenGenerator()
         token = token_generator.generate_activation_token(user)
 
-        activation_url = f'{reverse("activate-user", request=request)}?at={quote(token.key, safe="")}'
+        activation_url = f'{reverse("user-activate", request=request)}?at={quote(token.key, safe="")}'
         email_contents = f'Please click on the link to activate your new account:\n\n{activation_url}'
 
         send_mail(
             'Account Activation',
             email_contents,
-            settings.EMAIL_HOST_USERA,
+            settings.EMAIL_HOST_USER,
             [user.email],
             fail_silently=True,
         )
