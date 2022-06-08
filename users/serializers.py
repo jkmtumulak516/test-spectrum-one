@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer, Serializer, EmailField, CharField
 
 
@@ -17,6 +18,16 @@ class UserSerializer(ModelSerializer):
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'is_active', 'password')
         read_only_fields = ('id', 'is_active')
+
+    def __init__(self, instance=None, data=..., **kwargs):
+        request: Request = kwargs['context']['request']
+        user: User = request.user
+
+        if user.is_anonymous:
+            del self.fields['email']
+            del self.fields['last_name']
+
+        super().__init__(instance, data, **kwargs)
 
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data.get('password'))
