@@ -1,7 +1,7 @@
 import random
 
 from string import ascii_letters, digits
-from typing import Type
+from typing import Type, Union
 
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -34,3 +34,23 @@ class TokenGenerator(object):
 
     def _generate_token_key(self, length=32) -> str:
         return ''.join(random.choice(TOKEN_ALPHABET) for _ in range(length))
+
+class TokenValidator(object):
+
+    def validate_bearer_token(self, token_string: str) -> User | None:
+        return self._validate_token(BearerToken, token_string)
+
+    def validate_activation_token(self, token_string: str) -> User | None:
+        return self._validate_token(ActivationToken, token_string)
+
+    @transaction.atomic
+    def _validate_token(self, token_cls: Type[Token], token_string: str) -> User | None:
+
+        try:
+            token: Token = token_cls.objects \
+                .select_related('user') \
+                .get(key=token_string)
+            return token.user
+        except token_cls.DoesNotExist:
+            print('token does not exist')
+            return None
