@@ -3,6 +3,7 @@ from urllib.parse import quote
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from rest_framework import mixins, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from rest_framework.views import APIView
 
 from spectrum import settings
 from users import serializers
+from users.auth import TokenAuthentication
 from users.tokens import TokenGenerator, TokenValidator
 
 
@@ -43,7 +45,8 @@ class LoginView(APIView):
 class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
-    permission_classes = []
+    permission_classes = ()
+    authentication_classes = (TokenAuthentication,)
 
     @action(detail=False, methods=['post'], name='Register User')
     def register(self, request: Request):
@@ -98,3 +101,24 @@ class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
         serializer = serializers.UserSerializer(instance=user)
 
         return Response(serializer.data, status=200)
+
+    @action(
+        detail=False,
+        methods=['put'],
+        name='Change Password',
+        permission_classes=(IsAuthenticated,),
+        url_path=r'password/change',
+    )
+    def change_password(self, request: Request):
+
+        serializer = serializers.ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        new_password: str = serializer.validated_data['password']
+
+        user: User = request.user
+        user.set_password(new_password)
+        user.save()
+
+        return Response(status=200)

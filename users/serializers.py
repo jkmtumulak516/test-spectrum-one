@@ -32,3 +32,6 @@ class NoAuthUserSerializer(ModelSerializer):
 class LoginSerializer(Serializer):
     email = EmailField()
     password = CharField(style={'input_type': 'password'})
+
+class ChangePasswordSerializer(Serializer):
+    password = CharField(style={'input_type': 'password'})
