@@ -1,7 +1,7 @@
 import random
 
 from string import ascii_letters, digits
-from typing import Type, Union
+from typing import Type
 
 from django.contrib.auth.models import User
 from django.db import transaction
